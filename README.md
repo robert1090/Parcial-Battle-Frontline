@@ -1,13 +1,13 @@
 # Proyecto-parcial-IA
 
-## Nombre
----
+## Nombre:
 ### Robert Avila Betancour
-
-## Matrícula
 ---
+
+## Matrícula:
 ### 23-SISN-2-001
-
-## Proyecto
 ---
+
+## Proyecto:
 ### Examen Parcial - Battle Frontline
+---
