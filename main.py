@@ -18,14 +18,15 @@ clock = pygame.time.Clock()
 #Menu de Inicio
 def Menu():
     background_menu = pygame.transform.scale(pygame.image.load("assets/images/background_menu.png"), (anchura, altura))
-    font = pygame.font.SysFont(None, 45)
+    font = pygame.font.Font("assets/fonts/DeltaForce.ttf", 40)
     menu = True
     clock = pygame.time.Clock()
+    splash = pygame.transform.scale(pygame.image.load("assets/images/Battle-Frontline-Logo.png").convert_alpha(), (400, 200))
     selector = None
 
     #Boton de Inicio y Salir
-    iniciar_btn = pygame.Rect(anchura // 2 - 100, 450, 200, 60)
-    salir_btn = pygame.Rect(anchura // 2 - 100, 550, 200, 60)
+    iniciar_btn = pygame.Rect(100, 450, 200, 60)
+    salir_btn = pygame.Rect(100, 550, 200, 60)
 
     #While del Menu
     while menu:
@@ -40,8 +41,12 @@ def Menu():
         pygame.draw.rect(pantalla, (255, 0, 0), salir_btn)
         text_iniciar = font.render("Iniciar", True, (255, 255, 255))
         text_salir = font.render("Salir", True, (255, 255, 255))
-        pantalla.blit(text_iniciar, (iniciar_btn.x + 50, iniciar_btn.y + 15))
-        pantalla.blit(text_salir, (salir_btn.x + 60, salir_btn.y + 15))
+        pantalla.blit(text_iniciar, (iniciar_btn.x + 40, iniciar_btn.y + 15))
+        pantalla.blit(text_salir, (salir_btn.x + 50, salir_btn.y + 15))
+
+        #Dibujar el Titulo
+        splash_rect = splash.get_rect(center=(250, 150))
+        pantalla.blit(splash, splash_rect)
 
         pygame.display.flip()
 
