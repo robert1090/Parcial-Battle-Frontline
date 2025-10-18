@@ -67,10 +67,29 @@ def Menu():
             pygame.display.flip()
             pygame.time.delay(300)
             if selector == "jugar":
-                menu = False 
+                menu = False
+                Play()
             elif selector == "salir":
                 pygame.quit()
                 sys.exit()
+
+#Funcion de Juego
+def Play():
+    
+    run = True #Varibale que dara a entender que el bucle siga ejecutandose
+
+    #Bucle del Juego
+    while run:
+        for event in pygame.event.get(): #Captura de Eventos del Juego
+            if event.type == pygame.QUIT:
+                #Funcion para cerrar la ventana y matar la ejecucion
+                run = False
+                break
+
+        pantalla.fill((0,0,0)) #Imprimimos un Fondo Negro
+        clock.tick(60) #Limite de FPS
+
+        pygame.display.flip()#Actualizador de Pantalla
 
 #Llamada al Menu
 Menu()
