@@ -3,6 +3,9 @@
 
 import pygame
 import sys
+from scripts.player import Player
+from scripts.spritesheet import Spritesheet
+import json
 
 #Inicializacion de Pygame
 pygame.init()
@@ -13,7 +16,11 @@ pantalla = pygame.display.set_mode((anchura, altura))
 pygame.mixer.init()
 pygame.display.set_caption("Battle Frontline")
 pygame.display.set_icon(pygame.image.load("assets/images/icon.png"))
+background = pygame.transform.scale(pygame.image.load("assets/images/background.png"), (anchura, altura))
 clock = pygame.time.Clock()
+
+with open("scripts/coordenadas_sprite.json") as f:
+    sprite_data = json.load(f)
 
 #Menu de Inicio
 def Menu():
@@ -78,6 +85,9 @@ def Play():
     
     run = True #Varibale que dara a entender que el bucle siga ejecutandose
 
+    player = Player(sprite_data, Spritesheet("assets/images/player.png")) #Carga la clase Player y carga los Sprite
+    player.crear(pantalla) #Se dibuja en pantalla al Player
+
     #Bucle del Juego
     while run:
         for event in pygame.event.get(): #Captura de Eventos del Juego
@@ -88,6 +98,9 @@ def Play():
 
         pantalla.fill((0,0,0)) #Imprimimos un Fondo Negro
         clock.tick(60) #Limite de FPS
+        pantalla.blit(background, (0,0)) #Imprime el Escenario
+
+        player.mover(pygame.key.get_pressed(), pantalla) #Captura los botones precionados para mover a Player
 
         pygame.display.flip()#Actualizador de Pantalla
 

@@ -1,0 +1,83 @@
+#Nombre: Robert Avila Betancour
+#Matricula: 23-SISN-2-001
+
+import pygame
+
+#Clase Player que contiene las funciones de inicializacion, movimiento, animacion de sprite y limites
+class Player:
+    def __init__(self, sprite_data, spritesheet, scale=2):
+        self.X = 715
+        self.Y = 690
+        self.velocidad = 6
+        self.radio = 20
+        self.rect = pygame.Rect(self.X - 15, self.Y - 15, 60, 60)
+        self.scale = scale
+        self.sprite_data = sprite_data["Entidad"]
+        self.spritesheet = spritesheet
+        self.direction = "abajo"
+        self.frame_index = 0
+        self.frame_delay = 10
+        self.frame_counter = 0
+    
+    def crear(self, screen):
+        self.draw(screen)
+    
+    def mover(self, keys, screen):
+
+        #Se asigna el valor False para identificar que no este en movimiento
+        movio = False
+
+        #Verificamos si se preciona una tecla y pasa movido a True para animar el Sprite
+        if keys[pygame.K_w]:
+            self.Y -= self.velocidad
+            self.direction = "arriba"
+            movio = True
+        elif keys[pygame.K_s]:
+            self.Y += self.velocidad
+            self.direction = "abajo"
+            movio = True
+        elif keys[pygame.K_a]:
+            self.X -= self.velocidad
+            self.direction = "izquierda"
+            movio = True
+        elif keys[pygame.K_d]:
+            self.X += self.velocidad
+            self.direction = "derecha"
+            movio = True
+
+        #Se mueve la Hitbox junto al Player
+        self.rect.left = self.X - 15
+        self.rect.top = self.Y - 15
+        
+        #Llama la funcion de animar si esta en movimiento y de lo contrario se queda estatico
+        if movio:
+            self.animar()
+        else:
+            self.frame_index = 1
+
+        #dibujo del Player en pantalla
+        self.draw(screen)
+        self.limit() #Verifica los Limites
+
+    #Funcion para dibujar al Player
+    def draw(self, screen):
+        frame = self.sprite_data[self.direction][self.frame_index]
+        sprite = self.spritesheet.get_sprite(frame["x"], frame["y"], frame["i"], frame["j"])
+        
+        if self.scale != 1:
+            sprite = pygame.transform.scale_by(sprite, self.scale)
+
+        screen.blit(sprite, (self.rect.left, self.rect.top))
+        pygame.draw.rect(screen, (255, 0, 0), self.rect, 2)
+
+    #Funcion para animar el sprite en movimiento
+    def animar(self):
+        self.frame_counter += 1
+        if self.frame_counter >= self.frame_delay:
+            self.frame_index = (self.frame_index + 1) % len(self.sprite_data[self.direction])
+            self.frame_counter = 0
+
+    #Limites en Pantalla
+    def limit(self):
+        self.X = max(80, min(self.X, 1420))
+        self.Y = max(150, min(self.Y, 700))
