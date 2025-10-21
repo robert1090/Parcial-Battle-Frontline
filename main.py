@@ -5,6 +5,7 @@ import pygame
 import sys
 from scripts.player import Player
 from scripts.spritesheet import Spritesheet
+from scripts.enemy import Enemy
 import json
 
 #Inicializacion de Pygame
@@ -88,6 +89,12 @@ def Play():
     player = Player(sprite_data, Spritesheet("assets/images/player.png")) #Carga la clase Player y carga los Sprite
     player.crear(pantalla) #Se dibuja en pantalla al Player
 
+    # Crear enemigo
+    mapa = [[0]*50 for _ in range(30)]  # ejemplo de grid libre (sin obstáculos)
+
+    enemy = Enemy(sprite_data, Spritesheet("assets/images/enemy.png"), player, mapa)
+    enemy.crear(pantalla)
+
     #Bucle del Juego
     while run:
         for event in pygame.event.get(): #Captura de Eventos del Juego
@@ -101,6 +108,9 @@ def Play():
         pantalla.blit(background, (0,0)) #Imprime el Escenario
 
         player.mover(pygame.key.get_pressed(), pantalla) #Captura los botones precionados para mover a Player
+
+        enemy.update(pantalla)  #Actualiza comportamiento de Enemy
+        enemy.crear(pantalla)
 
         pygame.display.flip()#Actualizador de Pantalla
 
