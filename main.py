@@ -7,6 +7,7 @@ from scripts.player import Player
 from scripts.spritesheet import Spritesheet
 from scripts.enemy import Enemy
 import json
+import random
 
 #Inicializacion de Pygame
 pygame.init()
@@ -89,14 +90,19 @@ def Play():
     player = Player(sprite_data, Spritesheet("assets/images/player.png")) #Carga la clase Player y carga los Sprite
     player.crear(pantalla) #Se dibuja en pantalla al Player
 
-    # Crear enemigo
-    mapa = [[0]*50 for _ in range(30)]  # ejemplo de grid libre (sin obstáculos)
+    mapa = [[0]*50 for _ in range(30)]  #Grid Libre para mapa
 
-    enemy = Enemy(sprite_data, Spritesheet("assets/images/enemy.png"), player, mapa)
-    enemy.crear(pantalla)
+    max_enemy = 6 #Maximo de Enemys
+    enemys = [] #Array donde se almacenaran los Enemys
+    spawn_enemy = 3000 #Tiempo de Spawn de cada Enemy
+    ultimo_spawn = 0 #Contador de Tiempo desde el ultimo Spawn
+
+    #Posicion Aleatoria para Enemy
+    posiciones = [(200, 400), (1300, 400)]
 
     #Bucle del Juego
     while run:
+        tiempo = pygame.time.get_ticks()
         for event in pygame.event.get(): #Captura de Eventos del Juego
             if event.type == pygame.QUIT:
                 #Funcion para cerrar la ventana y matar la ejecucion
@@ -109,10 +115,80 @@ def Play():
 
         player.mover(pygame.key.get_pressed(), pantalla) #Captura los botones precionados para mover a Player
 
-        enemy.update(pantalla)  #Actualiza comportamiento de Enemy
-        enemy.crear(pantalla)
+        if tiempo - ultimo_spawn >= spawn_enemy and len(enemys) < max_enemy: #Crea un Enemy cada vez que el tiempo de Spawn se cumple
+            posicion = random.choice(posiciones)
+            enemy = Enemy(sprite_data, Spritesheet("assets/images/enemy.png"), player, mapa, posicion)
+            enemys.append(enemy)
+            player.enemy = enemy #Pasa referencia de Enemy a Player
+            ultimo_spawn = tiempo
+    
+        #Actualizador de Enemys
+        for enemigo in enemys[:]:
+            enemigo.update(pantalla)
+            if enemigo.vida <= 0:
+                enemys.remove(enemigo)
+
+        #Muestra en pantalla a los Enemys cada vez que se crean
+        for enemigo in enemys:
+            enemigo.crear(pantalla)
+
+        player.BalaCooldown.update(enemies=enemys) #Actualizador de las Balas de Player
 
         pygame.display.flip()#Actualizador de Pantalla
+
+        #Condicion para que ocurra el Gameover
+        if player.vida == 0:
+            Gameover()
+            return
+        
+def Gameover(): #Menu de Gameover
+    
+    run = True #Varibale que dara a entender que el bucle siga ejecutandose
+    gameover = pygame.transform.scale(pygame.image.load("assets/images/gameover.png").convert_alpha(), (400, 200))
+    font = pygame.font.Font("assets/fonts/DeltaForce.ttf", 40)
+    reiniciar_btn = pygame.Rect(anchura/2 - 110, 450, 220, 60)
+    salir_btn = pygame.Rect(anchura/2 - 100, 550, 200, 60)
+    selector = None
+
+    #Bucle del Menu de Gameover
+    while run:
+        pantalla.fill((0,0,0)) #Imprimimos un Fondo Negro
+        clock.tick(60) #Limite de FPS
+        gameover_rect = gameover.get_rect(center=(anchura/2, 150))
+        pantalla.blit(gameover, gameover_rect)
+
+        pygame.draw.rect(pantalla, (255, 0, 0), reiniciar_btn)
+        pygame.draw.rect(pantalla, (255, 0, 0), salir_btn)
+        text_reiniciar = font.render("Reintentar", True, (255, 255, 255))
+        text_salir = font.render("Salir", True, (255, 255, 255))
+        pantalla.blit(text_reiniciar, (reiniciar_btn.x, reiniciar_btn.y + 15))
+        pantalla.blit(text_salir, (salir_btn.x + 50, salir_btn.y + 15))
+
+        pygame.display.flip()
+
+        #Captura de eventos
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if reiniciar_btn.collidepoint(event.pos):
+                    selector = "reiniciar" 
+                elif salir_btn.collidepoint(event.pos):
+                    selector = "salir"
+
+        if selector:
+            pygame.mixer.Sound("assets/sounds/choice.ogg").play()
+            pygame.display.flip()
+            pygame.time.delay(300)
+            if selector == "reiniciar":
+                run = False
+                Play()
+                return
+            elif selector == "salir":
+                pygame.quit()
+                sys.exit()
 
 #Llamada al Menu
 Menu()

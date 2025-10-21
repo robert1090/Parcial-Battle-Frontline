@@ -49,9 +49,8 @@ class Invertir(Nodo):
 
 #Creacion de la clase de Enemigos
 class Enemy:
-    def __init__(self, sprite_data, spritesheet, player, mapa, scale=2):
-        self.X = 400
-        self.Y = 400
+    def __init__(self, sprite_data, spritesheet, player, mapa, posiciones, scale=2):
+        self.X, self.Y = posiciones
         self.velocidad = 4 #Velocidad de movimiento de Enemy
         self.radio = 20
         self.scale = scale
@@ -64,9 +63,9 @@ class Enemy:
         self.mapa = mapa
         self.tile_size = 32
         self.distancia_disparo = 400 #Distancia a la que comenzara a disparar del Player
-        self.cooldown = 600 #Cooldown del Disparo
+        self.cooldown = 900 #Cooldown del Disparo
         self.ultimo_shoot = 0
-        self.balas = BalaCooldown(cooldown=self.cooldown)
+        self.balas = BalaCooldown(cooldown=self.cooldown, tipo="enemy")
         self.camino = [] #Pathfinding
         self.ultima_busqueda = 0
         self.intervalo_busqueda = 500  #Tiempo de recarculando la busqueda
@@ -74,6 +73,7 @@ class Enemy:
         self.frame_index = 0
         self.frame_delay = 10
         self.frame_counter = 0
+        self.vida = 1 #Cantidad de Vidas de Enemy
 
     def crear(self, screen):
 
@@ -190,7 +190,7 @@ class Enemy:
     #Actualizador
     def update(self, screen):
         self.comportamiento.ejecutar()
-        self.balas.update()
+        self.balas.update(player=self.player)
         self.balas.draw(screen)
 
     #Implementacion de A* para buscar al player

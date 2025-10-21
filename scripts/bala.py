@@ -19,7 +19,7 @@ class Bala(pygame.sprite.Sprite):
         self.velocidad = 12 #Velocidad del proyectil
         self.direction = direction
 
-    def update(self):
+    def update(self): #Actualizador de direccion a la que ira la bala segun donde mire
         
         if self.direction == "arriba":
             self.rect.y -= self.velocidad
@@ -31,26 +31,42 @@ class Bala(pygame.sprite.Sprite):
             self.rect.x += self.velocidad
 
         if self.rect.x < 80 or self.rect.x > 1420 or self.rect.y < 150 or self.rect.y > 700:
-            self.kill()
+            self.kill() #Limite hasta donde llega la bala
 
-class BalaCooldown:
-    def __init__(self, bala_sprite=None, cooldown=300):
+class BalaCooldown: #Cooldown entre disparo para las balas
+    def __init__(self, bala_sprite=None, cooldown=300, tipo="player"):
         
         self.balas = pygame.sprite.Group()
-        self.bala_sprite = bala_sprite
-        self.cooldown = cooldown
-        self.ultimo_shoot = 0
+        self.bala_sprite = bala_sprite #Llama el Sprite de Bala, permitiendo tambien ser modificado
+        self.cooldown = cooldown #Tiempo de Cooldown
+        self.ultimo_shoot = 0 #Contador de Cooldown
+        self.tipo = tipo #Identificador de si es de Player o Enemy
 
     def shoot(self, x, y, direction):
         time = pygame.time.get_ticks()
         
+        #Funcion de disparo, comprueba si el cooldown ya termino y permite disparar, para luego reiniciar el cooldown
         if time - self.ultimo_shoot >= self.cooldown:
             bala = Bala(x, y, direction, self.bala_sprite)
             self.balas.add(bala)
             self.ultimo_shoot = time
 
-    def update(self):
-        self.balas.update()
+    def update(self, player=None, enemies=None):
+        self.balas.update() #Actualizador
+
+        #Deteccion si la bala de Enemy golpea a Player, o al reves, le resta una vida
+        if self.tipo == "enemy" and player is not None:
+            for bala in self.balas:
+                if bala.rect.colliderect(player.rect):
+                    player.vida -= 1
+                    bala.kill()
+        
+        elif self.tipo == "player" and enemies is not None:
+            for bala in self.balas:
+                for enemy in enemies:
+                    if bala.rect.colliderect(enemy.rect):
+                        enemy.vida -= 1
+                        bala.kill()
 
     def draw(self, screen):
-        self.balas.draw(screen)
+        self.balas.draw(screen) #Permite dibujar las balas en pantalla

@@ -28,6 +28,7 @@ class Player:
         self.BalaCooldown = BalaCooldown(self.bala_sprite)
         self.cooldown = 300
         self.ultimo_shoot = 0
+        self.vida = 3 #Cantidad de Vidas de Player
     
     def crear(self, screen):
 
@@ -73,7 +74,7 @@ class Player:
         #dibujo del Player en pantalla
         self.draw(screen)
         self.limit() #Verifica los Limites
-        self.BalaCooldown.update()
+        self.BalaCooldown.update(enemies=[self.enemy] if hasattr(self, "enemy") else None)
         self.BalaCooldown.draw(screen)
 
     def shoot(self):
