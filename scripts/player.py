@@ -3,7 +3,6 @@
 
 import pygame
 import os
-from scripts.bala import Bala
 from scripts.bala import BalaCooldown
 
 #Clase Player que contiene las funciones de inicializacion, movimiento, animacion de sprite y limites
@@ -34,10 +33,11 @@ class Player:
 
         self.draw(screen)
     
-    def mover(self, keys, screen):
+    def mover(self, keys, screen, bloques):
 
         #Se asigna el valor False para identificar que no este en movimiento
         movio = False
+        posicion_anterior = (self.X, self.Y) #En caso de chocar con un bloque
 
         #Verificamos si se preciona una tecla y pasa movido a True para animar el Sprite
         if keys[pygame.K_w]:
@@ -56,6 +56,15 @@ class Player:
             self.X += self.velocidad
             self.direction = "derecha"
             movio = True
+                
+        self.rect.left = self.X - 15
+        self.rect.top = self.Y - 15
+
+        for bloque in bloques: #Verifica colision con bloques
+            if self.rect.colliderect(bloque.rect):
+                self.X, self.Y = posicion_anterior
+                self.rect.left = self.X - 15
+                self.rect.top = self.Y - 15
         
         #Verifica si se preciona la tecla "J" para disparar
         if keys[pygame.K_j]:

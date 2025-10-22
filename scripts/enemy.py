@@ -51,7 +51,7 @@ class Invertir(Nodo):
 class Enemy:
     def __init__(self, sprite_data, spritesheet, player, mapa, posiciones, scale=2):
         self.X, self.Y = posiciones
-        self.velocidad = 4 #Velocidad de movimiento de Enemy
+        self.velocidad = 2 #Velocidad de movimiento de Enemy
         self.radio = 20
         self.scale = scale
         self.sprite_data = sprite_data["Entidad"] #Carga las coordenadas del Sprite
@@ -101,7 +101,7 @@ class Enemy:
             self.frame_index = 0 
 
     #Utiliza A_Star para encontrar a Player
-    def buscar_player(self):
+    def buscar_player(self, bloques):
         tiempo = pygame.time.get_ticks()
         moviendo = False  
 
@@ -114,26 +114,36 @@ class Enemy:
 
         if self.camino:
             siguiente_tile = self.camino[0]
-            siguiente_px = self.tile_a_pixel(siguiente_tile)
-            dx = siguiente_px[0] - self.rect.centerx
-            dy = siguiente_px[1] - self.rect.centery
+            tile_centro = self.tile_a_pixel(siguiente_tile)
+            dx = tile_centro[0] - self.rect.centerx
+            dy = tile_centro[1] - self.rect.centery
             distancia_al_tile = math.hypot(dx, dy)
-            distancia_al_player = math.hypot(self.player.rect.centerx - self.rect.centerx,
-                                            self.player.rect.centery - self.rect.centery)
-
+            distancia_al_player = math.hypot(self.player.rect.centerx - self.rect.centerx, self.player.rect.centery - self.rect.centery)
             alineado = self.player_alineado()
 
             #Evita que se mueva al menos que este lejos o no este alineado
-            if distancia_al_tile > 4 and (distancia_al_player > self.distancia_disparo or not alineado):
-                self.rect.x += int(self.velocidad * dx / distancia_al_tile)
-                self.rect.y += int(self.velocidad * dy / distancia_al_tile)
-                moviendo = True  
+            if distancia_al_tile > 1 and (distancia_al_player > self.distancia_disparo or not alineado):
 
-                # Actualizar dirección según vector de movimiento
+                if dx != 0:
+                    paso_x = max(-self.velocidad, min(self.velocidad, dx))
+                    self.rect.centerx += paso_x
+                    for bloque in bloques:
+                        if self.rect.colliderect(bloque.rect):
+                            self.rect.centerx -= paso_x
+
+                if dy != 0:
+                    paso_y = max(-self.velocidad, min(self.velocidad, dy))
+                    self.rect.centery += paso_y
+                    for bloque in bloques:
+                        if self.rect.colliderect(bloque.rect):
+                            self.rect.centery -= paso_y
+
                 if abs(dx) > abs(dy):
                     self.direction = "izquierda" if dx > 0 else "derecha"
                 else:
                     self.direction = "abajo" if dy > 0 else "arriba"
+
+                moviendo = True
             else:
                 self.camino.pop(0)
 
@@ -177,7 +187,7 @@ class Enemy:
     #Arbol de Comportamiento
     def arbol(self):
         secuencia_atacar = Secuencia()
-        secuencia_atacar.agregar_hijo(Accion(self.buscar_player))
+        secuencia_atacar.agregar_hijo(Accion(lambda: self.buscar_player(self.bloques)))
         secuencia_atacar.agregar_hijo(Accion(self.player_alineado))
         secuencia_atacar.agregar_hijo(Accion(self.player_distancia))
         secuencia_atacar.agregar_hijo(Accion(self.shoot))
@@ -188,9 +198,11 @@ class Enemy:
         return raiz
     
     #Actualizador
-    def update(self, screen):
+    def update(self, screen, bloques):
+        self.bloques = bloques
+        self.buscar_player(bloques)
         self.comportamiento.ejecutar()
-        self.balas.update(player=self.player)
+        self.balas.update(player=self.player, bloques=bloques)
         self.balas.draw(screen)
 
     #Implementacion de A* para buscar al player
@@ -211,7 +223,7 @@ class Enemy:
 
             for dx, dy in direcciones:
                 vecino = (actual[0] + dx, actual[1] + dy)
-                if not self.camino_valido(vecino):
+                if not self.camino_valido(vecino, self.bloques):
                     continue
 
                 nuevo_costo = costo_hasta_ahora[actual] + 1
@@ -239,8 +251,8 @@ class Enemy:
                 tile[1] * self.tile_size + self.tile_size // 2)
 
     #Verifica que es valido el camino
-    def camino_valido(self, tile):
+    def camino_valido(self, tile, bloques=None):
         x, y = tile
         if x < 0 or y < 0 or y >= len(self.mapa) or x >= len(self.mapa[0]):
             return False
-        return self.mapa[y][x] == 0 
+        return self.mapa[y][x] == 0

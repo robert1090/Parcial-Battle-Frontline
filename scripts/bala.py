@@ -51,7 +51,7 @@ class BalaCooldown: #Cooldown entre disparo para las balas
             self.balas.add(bala)
             self.ultimo_shoot = time
 
-    def update(self, player=None, enemies=None):
+    def update(self, player=None, enemies=None, bloques=None):
         self.balas.update() #Actualizador
 
         #Deteccion si la bala de Enemy golpea a Player, o al reves, le resta una vida
@@ -66,6 +66,14 @@ class BalaCooldown: #Cooldown entre disparo para las balas
                 for enemy in enemies:
                     if bala.rect.colliderect(enemy.rect):
                         enemy.vida -= 1
+                        bala.kill()
+        
+        #Deteccion de Bloques
+        if bloques is not None:
+            for bala in self.balas:
+                for bloque in bloques:
+                    if bala.rect.colliderect(bloque.rect):
+                        bloque.hit()
                         bala.kill()
 
     def draw(self, screen):

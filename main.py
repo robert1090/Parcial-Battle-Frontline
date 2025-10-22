@@ -6,6 +6,7 @@ import sys
 from scripts.player import Player
 from scripts.spritesheet import Spritesheet
 from scripts.enemy import Enemy
+from scripts.bloque import Bloque
 import json
 import random
 
@@ -23,6 +24,9 @@ clock = pygame.time.Clock()
 
 with open("scripts/coordenadas_sprite.json") as f:
     sprite_data = json.load(f)
+
+with open("scripts/posiciones_bloques.json", "r") as f:
+    posiciones_bloques = json.load(f)
 
 #Menu de Inicio
 def Menu():
@@ -90,7 +94,26 @@ def Play():
     player = Player(sprite_data, Spritesheet("assets/images/player.png")) #Carga la clase Player y carga los Sprite
     player.crear(pantalla) #Se dibuja en pantalla al Player
 
+    vida = pygame.image.load("assets/images/corazones.png").convert_alpha()
+    vida = pygame.transform.scale(vida, (40, 40))
+
+    #Creacion de Bloques en el Mapa
+    bloques = pygame.sprite.Group()
+    for x, y in posiciones_bloques:
+        bloque = Bloque(x, y, "assets/images/bloque.png")
+        bloques.add(bloque)
+
     mapa = [[0]*50 for _ in range(30)]  #Grid Libre para mapa
+
+    #Marca la posicion de los bloques en el mapa
+    for bloque in bloques:
+        tile_x = bloque.rect.left // 32
+        tile_y = bloque.rect.top // 32
+        ancho_tiles = bloque.rect.width // 32
+        alto_tiles = bloque.rect.height // 32
+        for x in range(tile_x, tile_x + ancho_tiles):
+            for y in range(tile_y, tile_y + alto_tiles):
+                mapa[y][x] = 1
 
     max_enemy = 6 #Maximo de Enemys
     enemys = [] #Array donde se almacenaran los Enemys
@@ -113,7 +136,7 @@ def Play():
         clock.tick(60) #Limite de FPS
         pantalla.blit(background, (0,0)) #Imprime el Escenario
 
-        player.mover(pygame.key.get_pressed(), pantalla) #Captura los botones precionados para mover a Player
+        player.mover(pygame.key.get_pressed(), pantalla, bloques) #Captura los botones precionados para mover a Player
 
         if tiempo - ultimo_spawn >= spawn_enemy and len(enemys) < max_enemy: #Crea un Enemy cada vez que el tiempo de Spawn se cumple
             posicion = random.choice(posiciones)
@@ -124,7 +147,7 @@ def Play():
     
         #Actualizador de Enemys
         for enemigo in enemys[:]:
-            enemigo.update(pantalla)
+            enemigo.update(pantalla, bloques)
             if enemigo.vida <= 0:
                 enemys.remove(enemigo)
 
@@ -132,7 +155,14 @@ def Play():
         for enemigo in enemys:
             enemigo.crear(pantalla)
 
-        player.BalaCooldown.update(enemies=enemys) #Actualizador de las Balas de Player
+        for bloque in bloques:
+            bloque.draw(pantalla)
+
+        player.BalaCooldown.update(enemies=enemys, bloques=bloques) #Actualizador de las Balas de Player
+
+        #Dibuja Vidas en Pantalla
+        for i in range(player.vida):
+            pantalla.blit(vida, (20 + i*50, 20))
 
         pygame.display.flip()#Actualizador de Pantalla
 
