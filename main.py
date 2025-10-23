@@ -9,18 +9,21 @@ from scripts.enemy import Enemy
 from scripts.bloque import Bloque
 import json
 import random
+import os
 
 #Inicializacion de Pygame
 pygame.init()
 #Dimensiones de la pantalla
+os.environ['SDL_VIDEO_CENTERED'] = '1'
 altura = 900
 anchura = 1500
-pantalla = pygame.display.set_mode((anchura, altura))
+pantalla = pygame.display.set_mode((anchura, altura), pygame.RESIZABLE)
 pygame.mixer.init()
 pygame.display.set_caption("Battle Frontline")
 pygame.display.set_icon(pygame.image.load("assets/images/icon.png"))
 background = pygame.transform.scale(pygame.image.load("assets/images/background.png"), (anchura, altura))
 clock = pygame.time.Clock()
+score = 0
 
 with open("scripts/coordenadas_sprite.json") as f:
     sprite_data = json.load(f)
@@ -30,12 +33,18 @@ with open("scripts/posiciones_bloques.json", "r") as f:
 
 #Menu de Inicio
 def Menu():
+    global pantalla, anchura, altura
     background_menu = pygame.transform.scale(pygame.image.load("assets/images/background_menu.png"), (anchura, altura))
     font = pygame.font.Font("assets/fonts/DeltaForce.ttf", 40)
     menu = True
     clock = pygame.time.Clock()
     splash = pygame.transform.scale(pygame.image.load("assets/images/Battle-Frontline-Logo.png").convert_alpha(), (400, 200))
     selector = None
+
+    #Cargamos la musica
+    pygame.mixer.music.load("assets/music/save-as.ogg")
+    pygame.mixer.music.set_volume(0.5)
+    pygame.mixer.music.play(-1)
 
     #Boton de Inicio y Salir
     iniciar_btn = pygame.Rect(100, 450, 200, 60)
@@ -75,9 +84,15 @@ def Menu():
                 elif salir_btn.collidepoint(event.pos):
                     selector = "salir"
 
+            elif event.type == pygame.VIDEORESIZE:
+                anchura, altura = event.w, event.h
+                pantalla = pygame.display.set_mode((anchura, altura), pygame.RESIZABLE)
+                background_menu = pygame.transform.scale(pygame.image.load("assets/images/background_menu.png"), (anchura, altura))
+
         if selector:
             pygame.mixer.Sound("assets/sounds/choice.ogg").play()
             pygame.display.flip()
+            pygame.mixer.music.stop()
             pygame.time.delay(300)
             if selector == "jugar":
                 menu = False
@@ -90,6 +105,12 @@ def Menu():
 def Play():
     
     run = True #Varibale que dara a entender que el bucle siga ejecutandose
+    global pantalla, background
+
+    #Cargamos la musica
+    pygame.mixer.music.load("assets/music/battle-woods.ogg")
+    pygame.mixer.music.set_volume(0.5)
+    pygame.mixer.music.play(-1)
 
     player = Player(sprite_data, Spritesheet("assets/images/player.png")) #Carga la clase Player y carga los Sprite
     player.crear(pantalla) #Se dibuja en pantalla al Player
@@ -117,11 +138,15 @@ def Play():
 
     max_enemy = 6 #Maximo de Enemys
     enemys = [] #Array donde se almacenaran los Enemys
-    spawn_enemy = 3000 #Tiempo de Spawn de cada Enemy
+    spawn_enemy = 1500 #Tiempo de Spawn de cada Enemy
     ultimo_spawn = 0 #Contador de Tiempo desde el ultimo Spawn
 
-    #Posicion Aleatoria para Enemy
-    posiciones = [(200, 400), (1300, 400)]
+    #Posicion Aleatoria de Spawn para Enemy
+    posiciones = [(200, 400), (1300, 400), (250, 700), (1250, 700), (200, 200), (1300, 200)]
+
+    #Puntaje
+    global score
+    score = 0
 
     #Bucle del Juego
     while run:
@@ -131,6 +156,11 @@ def Play():
                 #Funcion para cerrar la ventana y matar la ejecucion
                 run = False
                 break
+
+        if event.type == pygame.VIDEORESIZE:
+            anchura, altura = event.w, event.h
+            pantalla = pygame.display.set_mode((anchura, altura), pygame.RESIZABLE)
+            background = pygame.transform.scale(pygame.image.load("assets/images/background.png"), (anchura, altura))
 
         pantalla.fill((0,0,0)) #Imprimimos un Fondo Negro
         clock.tick(60) #Limite de FPS
@@ -150,6 +180,8 @@ def Play():
             enemigo.update(pantalla, bloques)
             if enemigo.vida <= 0:
                 enemys.remove(enemigo)
+                score += 10 #Aumenta el puntaje al eliminar un Enemy
+
 
         #Muestra en pantalla a los Enemys cada vez que se crean
         for enemigo in enemys:
@@ -168,6 +200,7 @@ def Play():
 
         #Condicion para que ocurra el Gameover
         if player.vida == 0:
+            pygame.mixer.music.stop()
             Gameover()
             return
         
@@ -179,6 +212,11 @@ def Gameover(): #Menu de Gameover
     reiniciar_btn = pygame.Rect(anchura/2 - 110, 450, 220, 60)
     salir_btn = pygame.Rect(anchura/2 - 100, 550, 200, 60)
     selector = None
+
+    #Cargamos la musica
+    gameover_sound = pygame.mixer.Sound("assets/music/game-over.ogg")
+    gameover_sound.set_volume(0.5)
+    gameover_sound.play()
 
     #Bucle del Menu de Gameover
     while run:
@@ -193,6 +231,9 @@ def Gameover(): #Menu de Gameover
         text_salir = font.render("Salir", True, (255, 255, 255))
         pantalla.blit(text_reiniciar, (reiniciar_btn.x, reiniciar_btn.y + 15))
         pantalla.blit(text_salir, (salir_btn.x + 50, salir_btn.y + 15))
+
+        text_score = font.render("Puntuaje: " + str(score), True, (255, 255, 255))
+        pantalla.blit(text_score, (anchura/2 - 120, 350))
 
         pygame.display.flip()
 
