@@ -11,3 +11,6 @@
 ## Proyecto:
 ### Examen Parcial - Battle Frontline
 ---
+
+## Enlace de Video:
+[![Parcial IA - Battle Frontline](https://youtu.be/s4w1qObFCBg)](https://youtu.be/s4w1qObFCBg)
