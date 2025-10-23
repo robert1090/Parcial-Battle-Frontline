@@ -13,6 +13,7 @@ import os
 
 #Inicializacion de Pygame
 pygame.init()
+pygame.joystick.init()
 #Dimensiones de la pantalla
 os.environ['SDL_VIDEO_CENTERED'] = '1'
 altura = 900
@@ -24,6 +25,13 @@ pygame.display.set_icon(pygame.image.load("assets/images/icon.png"))
 background = pygame.transform.scale(pygame.image.load("assets/images/background.png"), (anchura, altura))
 clock = pygame.time.Clock()
 score = 0
+
+#Verifica si hay un joystick conectado
+if pygame.joystick.get_count() > 0:
+    control = pygame.joystick.Joystick(0)
+    control.get_init()
+else:
+    control = None
 
 with open("scripts/coordenadas_sprite.json") as f:
     sprite_data = json.load(f)
@@ -49,6 +57,8 @@ def Menu():
     #Boton de Inicio y Salir
     iniciar_btn = pygame.Rect(100, 450, 200, 60)
     salir_btn = pygame.Rect(100, 550, 200, 60)
+    boton_a = pygame.transform.scale(pygame.image.load("assets/images/boton_A.png").convert_alpha(), (40, 40))
+    boton_b = pygame.transform.scale(pygame.image.load("assets/images/boton_b.png").convert_alpha(), (40, 40))
 
     #While del Menu
     while menu:
@@ -57,8 +67,8 @@ def Menu():
         pantalla.blit(background_menu, (0, 0))
 
         #Dibujar Botones
-        boton_a = pygame.transform.scale(pygame.image.load("assets/images/boton_a.png").convert_alpha(), (40, 40))
-        boton_b = pygame.transform.scale(pygame.image.load("assets/images/boton_b.png").convert_alpha(), (40, 40))
+        pantalla.blit(boton_a, (iniciar_btn.x - 50, iniciar_btn.y + 10))
+        pantalla.blit(boton_b, (salir_btn.x - 50, salir_btn.y + 10))
         pygame.draw.rect(pantalla, (255, 0, 0), iniciar_btn)
         pygame.draw.rect(pantalla, (255, 0, 0), salir_btn)
         text_iniciar = font.render("Iniciar", True, (255, 255, 255))
@@ -69,6 +79,11 @@ def Menu():
         #Dibujar el Titulo
         splash_rect = splash.get_rect(center=(250, 150))
         pantalla.blit(splash, splash_rect)
+
+        #Muestra el puntuaje si existe uno previo
+        if score > 0:
+            text_score = font.render("Ultimo Puntuaje: " + str(score), True, (255, 255, 255))
+            pantalla.blit(text_score, (100, 300))
 
         pygame.display.flip()
 
@@ -82,6 +97,12 @@ def Menu():
                 if iniciar_btn.collidepoint(event.pos):
                     selector = "jugar" 
                 elif salir_btn.collidepoint(event.pos):
+                    selector = "salir"
+
+            elif event.type == pygame.JOYBUTTONDOWN:
+                if event.button == 0:
+                    selector = "jugar"
+                elif event.button == 1:
                     selector = "salir"
 
             elif event.type == pygame.VIDEORESIZE:
@@ -106,6 +127,8 @@ def Play():
     
     run = True #Varibale que dara a entender que el bucle siga ejecutandose
     global pantalla, background
+    font = pygame.font.Font(None, 40)
+    boton_a = pygame.transform.scale(pygame.image.load("assets/images/boton_A.png").convert_alpha(), (40, 40))
 
     #Cargamos la musica
     pygame.mixer.music.load("assets/music/battle-woods.ogg")
@@ -136,7 +159,7 @@ def Play():
             for y in range(tile_y, tile_y + alto_tiles):
                 mapa[y][x] = 1
 
-    max_enemy = 6 #Maximo de Enemys
+    max_enemy = 8 #Maximo de Enemys
     enemys = [] #Array donde se almacenaran los Enemys
     spawn_enemy = 1500 #Tiempo de Spawn de cada Enemy
     ultimo_spawn = 0 #Contador de Tiempo desde el ultimo Spawn
@@ -156,6 +179,9 @@ def Play():
                 #Funcion para cerrar la ventana y matar la ejecucion
                 run = False
                 break
+            elif event.type == pygame.JOYBUTTONDOWN:
+                if event.button == 0:
+                    player.shoot()
 
         if event.type == pygame.VIDEORESIZE:
             anchura, altura = event.w, event.h
@@ -165,8 +191,14 @@ def Play():
         pantalla.fill((0,0,0)) #Imprimimos un Fondo Negro
         clock.tick(60) #Limite de FPS
         pantalla.blit(background, (0,0)) #Imprime el Escenario
+        text_shot = font.render("Disparar: ", True, (255, 255, 255))
+        pantalla.blit(text_shot, (50, 840))
+        pantalla.blit(boton_a, (180, 835))
 
-        player.mover(pygame.key.get_pressed(), pantalla, bloques) #Captura los botones precionados para mover a Player
+        if control:
+            player.mover(pygame.key.get_pressed(), pantalla, bloques, control) #Captura los botones precionados para mover a Player
+        else:
+            player.mover(pygame.key.get_pressed(), pantalla, bloques) #Captura los botones precionados para mover a Player
 
         if tiempo - ultimo_spawn >= spawn_enemy and len(enemys) < max_enemy: #Crea un Enemy cada vez que el tiempo de Spawn se cumple
             posicion = random.choice(posiciones)
@@ -210,13 +242,19 @@ def Gameover(): #Menu de Gameover
     gameover = pygame.transform.scale(pygame.image.load("assets/images/gameover.png").convert_alpha(), (400, 200))
     font = pygame.font.Font("assets/fonts/DeltaForce.ttf", 40)
     reiniciar_btn = pygame.Rect(anchura/2 - 110, 450, 220, 60)
-    salir_btn = pygame.Rect(anchura/2 - 100, 550, 200, 60)
+    salir_btn = pygame.Rect(anchura/2 - 100, 650, 200, 60)
+    menu_btn = pygame.Rect(anchura/2 - 100, 550, 200, 60)
     selector = None
 
     #Cargamos la musica
     gameover_sound = pygame.mixer.Sound("assets/music/game-over.ogg")
     gameover_sound.set_volume(0.5)
     gameover_sound.play()
+
+    #Carga la imagen de los botones
+    boton_a = pygame.transform.scale(pygame.image.load("assets/images/boton_A.png").convert_alpha(), (40, 40))
+    boton_b = pygame.transform.scale(pygame.image.load("assets/images/boton_b.png").convert_alpha(), (40, 40))
+    boton_y = pygame.transform.scale(pygame.image.load("assets/images/boton_Y.png").convert_alpha(), (40, 40))
 
     #Bucle del Menu de Gameover
     while run:
@@ -225,11 +263,18 @@ def Gameover(): #Menu de Gameover
         gameover_rect = gameover.get_rect(center=(anchura/2, 150))
         pantalla.blit(gameover, gameover_rect)
 
+        pantalla.blit(boton_a, (reiniciar_btn.x - 50, reiniciar_btn.y + 10))
+        pantalla.blit(boton_y, (menu_btn.x - 50, menu_btn.y + 10))
+        pantalla.blit(boton_b, (salir_btn.x - 50, salir_btn.y + 10))
+
         pygame.draw.rect(pantalla, (255, 0, 0), reiniciar_btn)
+        pygame.draw.rect(pantalla, (255, 0, 0), menu_btn)
         pygame.draw.rect(pantalla, (255, 0, 0), salir_btn)
         text_reiniciar = font.render("Reintentar", True, (255, 255, 255))
+        text_menu = font.render("Menu", True, (255, 255, 255))
         text_salir = font.render("Salir", True, (255, 255, 255))
         pantalla.blit(text_reiniciar, (reiniciar_btn.x, reiniciar_btn.y + 15))
+        pantalla.blit(text_menu, (menu_btn.x + 50, menu_btn.y + 15))
         pantalla.blit(text_salir, (salir_btn.x + 50, salir_btn.y + 15))
 
         text_score = font.render("Puntuaje: " + str(score), True, (255, 255, 255))
@@ -246,16 +291,31 @@ def Gameover(): #Menu de Gameover
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if reiniciar_btn.collidepoint(event.pos):
                     selector = "reiniciar" 
+                elif menu_btn.collidepoint(event.pos):
+                    selector = "menu"
                 elif salir_btn.collidepoint(event.pos):
                     selector = "salir"
 
+            elif event.type == pygame.JOYBUTTONDOWN:
+                if event.button == 0:
+                    selector = "reiniciar"
+                elif event.button == 3:
+                    selector = "menu"
+                elif event.button == 1:
+                    selector = "salir"
+
         if selector:
+            gameover_sound.stop()
             pygame.mixer.Sound("assets/sounds/choice.ogg").play()
             pygame.display.flip()
             pygame.time.delay(300)
             if selector == "reiniciar":
                 run = False
                 Play()
+                return
+            elif selector == "menu":
+                run = False
+                Menu()
                 return
             elif selector == "salir":
                 pygame.quit()

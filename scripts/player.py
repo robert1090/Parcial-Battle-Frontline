@@ -27,32 +27,38 @@ class Player:
         self.BalaCooldown = BalaCooldown(self.bala_sprite)
         self.cooldown = 300
         self.ultimo_shoot = 0
-        self.vida = 3 #Cantidad de Vidas de Player
+        self.vida = 5 #Cantidad de Vidas de Player
     
     def crear(self, screen):
 
         self.draw(screen)
     
-    def mover(self, keys, screen, bloques):
+    def mover(self, keys, screen, bloques, control=None):
 
         #Se asigna el valor False para identificar que no este en movimiento
         movio = False
         posicion_anterior = (self.X, self.Y) #En caso de chocar con un bloque
 
+        #verifica si se mueve el stick del mando
+        eje_x, eje_y = 0, 0
+        if control:
+            eje_x = control.get_axis(0)
+            eje_y = control.get_axis(1)
+
         #Verificamos si se preciona una tecla y pasa movido a True para animar el Sprite
-        if keys[pygame.K_w]:
+        if keys[pygame.K_w] or eje_y < -0.5:
             self.Y -= self.velocidad
             self.direction = "arriba"
             movio = True
-        elif keys[pygame.K_s]:
+        elif keys[pygame.K_s] or eje_y > 0.5:
             self.Y += self.velocidad
             self.direction = "abajo"
             movio = True
-        elif keys[pygame.K_a]:
+        elif keys[pygame.K_a] or eje_x < -0.5:
             self.X -= self.velocidad
             self.direction = "izquierda"
             movio = True
-        elif keys[pygame.K_d]:
+        elif keys[pygame.K_d] or eje_x > 0.5:
             self.X += self.velocidad
             self.direction = "derecha"
             movio = True
@@ -67,7 +73,7 @@ class Player:
                 self.rect.top = self.Y - 15
         
         #Verifica si se preciona la tecla "J" para disparar
-        if keys[pygame.K_j]:
+        if keys[pygame.K_j] or pygame.JOYBUTTONDOWN == 0:
             self.shoot()
 
         #Se mueve la Hitbox junto al Player
